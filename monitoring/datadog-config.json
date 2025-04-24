@@ -1,0 +1,299 @@
+{
+  "widgets": [
+    {
+      "definition": {
+        "type": "group",
+        "title": "CloudBox API Overview",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "API Gateway Requests",
+              "title_size": "16",
+              "title_align": "left",
+              "time": {
+                "live_span": "1h"
+              },
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:aws.apigateway.count{apiname:cloudbox-api-$ENV} by {resource,method}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "",
+                "min": "auto",
+                "max": "auto"
+              },
+              "markers": []
+            }
+          },
+          {
+            "definition": {
+              "title": "API Errors",
+              "title_size": "16",
+              "title_align": "left",
+              "time": {
+                "live_span": "1h"
+              },
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:aws.apigateway.4xxerror{apiname:cloudbox-api-$ENV}",
+                  "display_type": "bars",
+                  "style": {
+                    "palette": "warm",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                },
+                {
+                  "q": "sum:aws.apigateway.5xxerror{apiname:cloudbox-api-$ENV}",
+                  "display_type": "bars",
+                  "style": {
+                    "palette": "red",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "",
+                "min": "auto",
+                "max": "auto"
+              },
+              "markers": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "group",
+        "title": "Lambda Performance",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Lambda Invocations & Errors",
+              "title_size": "16",
+              "title_align": "left",
+              "time": {
+                "live_span": "1h"
+              },
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:aws.lambda.invocations{functionname:cloudbox-api-$ENV}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                },
+                {
+                  "q": "sum:aws.lambda.errors{functionname:cloudbox-api-$ENV}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "red",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "",
+                "min": "auto",
+                "max": "auto"
+              },
+              "markers": []
+            }
+          },
+          {
+            "definition": {
+              "title": "Lambda Duration",
+              "title_size": "16",
+              "title_align": "left",
+              "time": {
+                "live_span": "1h"
+              },
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:aws.lambda.duration{functionname:cloudbox-api-$ENV}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                },
+                {
+                  "q": "p90:aws.lambda.duration{functionname:cloudbox-api-$ENV}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "warm",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                },
+                {
+                  "q": "max:aws.lambda.duration{functionname:cloudbox-api-$ENV}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "orange",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "ms",
+                "min": "auto",
+                "max": "auto"
+              },
+              "markers": [
+                {
+                  "value": "y = 3000",
+                  "display_type": "warning dashed",
+                  "label": "Timeout Warning"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Lambda Throttles",
+              "title_size": "16",
+              "title_align": "left",
+              "time": {
+                "live_span": "1h"
+              },
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:aws.lambda.throttles{functionname:cloudbox-api-$ENV}",
+                  "display_type": "bars",
+                  "style": {
+                    "palette": "red",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "",
+                "min": "auto",
+                "max": "auto"
+              },
+              "markers": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "group",
+        "title": "Storage & Database",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "S3 Operations",
+              "title_size": "16",
+              "title_align": "left",
+              "time": {
+                "live_span": "1h"
+              },
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:aws.s3.all_requests{bucket:cloudbox-files-$ENV} by {method}",
+                  "display_type": "bars",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "",
+                "min": "auto",
+                "max": "auto"
+              },
+              "markers": []
+            }
+          },
+          {
+            "definition": {
+              "title": "DynamoDB Consumed Capacity",
+              "title_size": "16",
+              "title_align": "left",
+              "time": {
+                "live_span": "1h"
+              },
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:aws.dynamodb.consumed_read_capacity_units{tablename:cloudbox-metadata-$ENV}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                },
+                {
+                  "q": "sum:aws.dynamodb.consumed_write_capacity_units{tablename:cloudbox-metadata-$ENV}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "cool",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "",
+                "min": "auto",
+                "max": "auto"
+              },
+              "markers": []
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "layout": {
+    "x": 0,
+    "y": 0,
+    "width": 12,
+    "height": 7
+  },
+  "id": "cloudbox-dashboard-$ENV"
+}

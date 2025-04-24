@@ -1,0 +1,200 @@
+name: CloudBox CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          cache: 'npm'
+          cache-dependency-path: 'api/package.json'
+      
+      - name: Install dependencies
+        run: |
+          cd api
+          npm ci
+      
+      - name: Run linting
+        run: |
+          cd api
+          npm run lint
+      
+      - name: Run tests
+        run: |
+          cd api
+          npm test
+  
+  build:
+    name: Build
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          cache: 'npm'
+          cache-dependency-path: 'api/package.json'
+      
+      - name: Install dependencies
+        run: |
+          cd api
+          npm ci --production
+      
+      - name: Create deployment package
+        run: |
+          mkdir -p dist
+          cd api
+          zip -r ../dist/lambda-package.zip .
+      
+      - name: Upload deployment package
+        uses: actions/upload-artifact@v3
+        with:
+          name: lambda-package
+          path: dist/lambda-package.zip
+  
+  terraform-plan:
+    name: Terraform Plan
+    needs: build
+    runs-on: ubuntu-latest
+    
+    # Determine environment to use
+    env:
+      TF_WORKSPACE: ${{ github.event.inputs.environment || 'dev' }}
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.0.0
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      
+      - name: Terraform Init
+        working-directory: terraform
+        run: |
+          terraform init \
+            -backend-config="bucket=cloudbox-tf-state" \
+            -backend-config="key=${{ env.TF_WORKSPACE }}/terraform.tfstate" \
+            -backend-config="region=us-east-1"
+      
+      - name: Terraform Workspace
+        working-directory: terraform
+        run: |
+          terraform workspace select ${{ env.TF_WORKSPACE }} || terraform workspace new ${{ env.TF_WORKSPACE }}
+      
+      - name: Terraform Plan
+        working-directory: terraform
+        run: |
+          terraform plan -var-file="env/${{ env.TF_WORKSPACE }}.tfvars" -out=tfplan
+      
+      - name: Upload Terraform plan
+        uses: actions/upload-artifact@v3
+        with:
+          name: terraform-plan
+          path: terraform/tfplan
+  
+  deploy:
+    name: Deploy
+    needs: terraform-plan
+    runs-on: ubuntu-latest
+    # Only deploy on push to main or explicit workflow dispatch
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    
+    # Determine environment to use
+    env:
+      TF_WORKSPACE: ${{ github.event.inputs.environment || 'dev' }}
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.0.0
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      
+      - name: Download Lambda package
+        uses: actions/download-artifact@v3
+        with:
+          name: lambda-package
+          path: dist
+      
+      - name: Download Terraform plan
+        uses: actions/download-artifact@v3
+        with:
+          name: terraform-plan
+          path: terraform
+      
+      - name: Terraform Init
+        working-directory: terraform
+        run: |
+          terraform init \
+            -backend-config="bucket=cloudbox-tf-state" \
+            -backend-config="key=${{ env.TF_WORKSPACE }}/terraform.tfstate" \
+            -backend-config="region=us-east-1"
+      
+      - name: Terraform Workspace
+        working-directory: terraform
+        run: |
+          terraform workspace select ${{ env.TF_WORKSPACE }} || terraform workspace new ${{ env.TF_WORKSPACE }}
+      
+      - name: Terraform Apply
+        working-directory: terraform
+        run: |
+          terraform apply -auto-approve tfplan
+      
+      - name: Get Lambda function name
+        id: lambda
+        working-directory: terraform
+        run: |
+          LAMBDA_FUNCTION=$(terraform output -raw lambda_function_name)
+          echo "function=$LAMBDA_FUNCTION" >> $GITHUB_OUTPUT
+      
+      - name: Update Lambda function code
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ steps.lambda.outputs.function }} \
+            --zip-file fileb://dist/lambda-package.zip
+            
+      - name: Notify deployment success
+        # Add your notification logic here (Slack, Teams, etc.)
+        run: echo "Deployment to ${{ env.TF_WORKSPACE }} succeeded!"

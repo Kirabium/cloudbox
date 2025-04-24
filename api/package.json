@@ -1,0 +1,21 @@
+{
+  "name": "cloudbox-api",
+  "version": "1.0.0",
+  "description": "Serverless API for CloudBox file storage service",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1189.0",
+    "uuid": "^8.3.2",
+    "jsonwebtoken": "^8.5.1"
+  },
+  "devDependencies": {
+    "jest": "^28.1.3",
+    "eslint": "^8.21.0"
+  },
+  "author": "Virgile Fantauzzi",
+  "license": "MIT"
+}

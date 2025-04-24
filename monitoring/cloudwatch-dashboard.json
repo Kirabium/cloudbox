@@ -1,0 +1,176 @@
+{
+  "widgets": [
+    {
+      "type": "text",
+      "x": 0,
+      "y": 0,
+      "width": 24,
+      "height": 1,
+      "properties": {
+        "markdown": "# CloudBox Monitoring Dashboard\nServerless File Storage API - **${Environment}** environment"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 1,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "view": "timeSeries",
+        "stacked": false,
+        "metrics": [
+          [ "AWS/Lambda", "Invocations", "FunctionName", "${LambdaFunction}", { "stat": "Sum", "period": 60 } ],
+          [ ".", "Errors", ".", ".", { "stat": "Sum", "period": 60 } ],
+          [ ".", "Throttles", ".", ".", { "stat": "Sum", "period": 60 } ]
+        ],
+        "region": "${Region}",
+        "title": "Lambda Invocations, Errors, and Throttles",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 1,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "view": "timeSeries",
+        "stacked": false,
+        "metrics": [
+          [ "AWS/Lambda", "Duration", "FunctionName", "${LambdaFunction}", { "stat": "Average", "period": 60 } ],
+          [ "...", { "stat": "p90", "period": 60 } ],
+          [ "...", { "stat": "p50", "period": 60 } ]
+        ],
+        "region": "${Region}",
+        "title": "Lambda Duration (ms)",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 7,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "view": "timeSeries",
+        "stacked": false,
+        "metrics": [
+          [ "AWS/ApiGateway", "Count", "ApiName", "${ApiGatewayName}", "Stage", "${ApiGatewayStage}", "Resource", "/upload", "Method", "POST", { "stat": "Sum", "period": 60 } ],
+          [ "...", "/list", ".", "GET", { "stat": "Sum", "period": 60 } ],
+          [ "...", "/download", ".", "GET", { "stat": "Sum", "period": 60 } ],
+          [ "...", "/delete", ".", "DELETE", { "stat": "Sum", "period": 60 } ]
+        ],
+        "region": "${Region}",
+        "title": "API Gateway Requests by Endpoint",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 7,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "view": "timeSeries",
+        "stacked": false,
+        "metrics": [
+          [ "AWS/ApiGateway", "4XXError", "ApiName", "${ApiGatewayName}", "Stage", "${ApiGatewayStage}", { "stat": "Sum", "period": 60 } ],
+          [ ".", "5XXError", ".", ".", ".", ".", { "stat": "Sum", "period": 60 } ]
+        ],
+        "region": "${Region}",
+        "title": "API Gateway Errors",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 13,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "view": "timeSeries",
+        "stacked": false,
+        "metrics": [
+          [ "AWS/S3", "BucketSizeBytes", "BucketName", "${S3Bucket}", "StorageType", "StandardStorage", { "period": 86400, "stat": "Average" } ]
+        ],
+        "region": "${Region}",
+        "title": "S3 Bucket Size (Bytes)",
+        "period": 86400
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 13,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "view": "timeSeries",
+        "stacked": false,
+        "metrics": [
+          [ "AWS/S3", "NumberOfObjects", "BucketName", "${S3Bucket}", "StorageType", "AllStorageTypes", { "period": 86400, "stat": "Average" } ]
+        ],
+        "region": "${Region}",
+        "title": "S3 Number of Objects",
+        "period": 86400
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 19,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "view": "timeSeries",
+        "stacked": false,
+        "metrics": [
+          [ "AWS/DynamoDB", "ConsumedReadCapacityUnits", "TableName", "${DynamoDBTable}", { "stat": "Sum", "period": 60 } ],
+          [ ".", "ConsumedWriteCapacityUnits", ".", ".", { "stat": "Sum", "period": 60 } ]
+        ],
+        "region": "${Region}",
+        "title": "DynamoDB Consumed Capacity",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 19,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "view": "timeSeries",
+        "stacked": false,
+        "metrics": [
+          [ "AWS/DynamoDB", "SuccessfulRequestLatency", "TableName", "${DynamoDBTable}", "Operation", "GetItem", { "stat": "Average", "period": 60 } ],
+          [ "...", "Query", { "stat": "Average", "period": 60 } ],
+          [ "...", "PutItem", { "stat": "Average", "period": 60 } ],
+          [ "...", "DeleteItem", { "stat": "Average", "period": 60 } ]
+        ],
+        "region": "${Region}",
+        "title": "DynamoDB Request Latency",
+        "period": 300
+      }
+    },
+    {
+      "type": "log",
+      "x": 0,
+      "y": 25,
+      "width": 24,
+      "height": 6,
+      "properties": {
+        "query": "SOURCE '/aws/lambda/${LambdaFunction}' | fields @timestamp, @message\n| filter @message like /ERROR/ or @message like /Error/\n| sort @timestamp desc\n| limit 20",
+        "region": "${Region}",
+        "stacked": false,
+        "title": "Recent Lambda Errors",
+        "view": "table"
+      }
+    }
+  ]
+}
